@@ -10,6 +10,8 @@
 #include "driverlib/uart.h"
 #include "utils/uartstdio.c"
 //-------------------------------
+// PWM libraries:
+#include "driverlib/pwm.h"
 
 int freq = 120000000;
 volatile uint32_t ui32Loop;
@@ -21,6 +23,7 @@ void toogleUart(bool *ledUart);
 
 int main(void)
 {
+    uint32_t ui32Period;
     uint32_t distance = 0;
     char rxBuffer[10];
     bool ledUart = true;
@@ -41,6 +44,9 @@ int main(void)
     SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOF);
     //-------------------------------------------
     SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOB);  // HC-SR04 Trig/Echo
+    //-------------------------------------------
+    SysCtlPeripheralEnable(SYSCTL_PERIPH_PWM0); //Modulo PWM
+    SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOH); //Direccion del motor
     
     // Verificar perifericos:
     while(!SysCtlPeripheralReady(SYSCTL_PERIPH_UART0))  {}
@@ -51,6 +57,9 @@ int main(void)
     while(!SysCtlPeripheralReady(SYSCTL_PERIPH_GPIOF))  {}
     //-----------------------------------------------------
     while(!SysCtlPeripheralReady(SYSCTL_PERIPH_GPIOB))  {}
+    //-----------------------------------------------------
+    while(!SysCtlPeripheralReady(SYSCTL_PERIPH_PWM0))  {}
+    while(!SysCtlPeripheralReady(SYSCTL_PERIPH_GPIOH))  {}
 
 
     GPIOPinTypeGPIOOutput(GPIO_PORTN_BASE, 0x07);
@@ -64,13 +73,52 @@ int main(void)
     //--------------------------------------------------------------
     GPIOPinTypeGPIOOutput(GPIO_PORTB_BASE, 0x20); // Trig
     GPIOPinTypeGPIOInput(GPIO_PORTB_BASE, 0x10);  // Echo
+    //--------------------------------------------------------------
+    GPIOPinTypeGPIOOutput(GPIO_PORTH_BASE, 0x0f);
 
     UARTStdioConfig(0, 9600, freq);
+
+    //--------------------------------------------------------------
+
+    // Configurar PF2 como salida PWM2
+    GPIOPinConfigure(GPIO_PF2_M0PWM2);
+    GPIOPinTypePWM(GPIO_PORTF_BASE, 0x04);
+
+    // Configurar el generador PWM1 en modo up/down
+    PWMGenConfigure(PWM0_BASE, PWM_GEN_1, PWM_GEN_MODE_UP_DOWN | PWM_GEN_MODE_NO_SYNC);
+
+    // Periodo del PWM: 240 kHz
+    ui32Period = freq / 25000;//Dutty cycle de 4800
+    PWMGenPeriodSet(PWM0_BASE, PWM_GEN_1, ui32Period);
+
+    // Habilitar la salida PWM en PF2
+    PWMOutputState(PWM0_BASE, PWM_OUT_2_BIT, true);
+
+    // Habilitar el generador PWM
+    PWMGenEnable(PWM0_BASE, PWM_GEN_1);
+
+    //--------------------------------------------------------------
+    // Configurar PF1 como salida PWM1
+    GPIOPinConfigure(GPIO_PF1_M0PWM1);
+    GPIOPinTypePWM(GPIO_PORTF_BASE, 0x02);
+
+    // Configurar el generador PWM1 en modo up/down
+    PWMGenConfigure(PWM0_BASE, PWM_GEN_0, PWM_GEN_MODE_UP_DOWN | PWM_GEN_MODE_NO_SYNC);
+
+    PWMGenPeriodSet(PWM0_BASE, PWM_GEN_0, ui32Period);
+
+    // Habilitar la salida PWM en PF1
+    PWMOutputState(PWM0_BASE, PWM_OUT_1_BIT, true);
+
+    // Habilitar el generador PWM
+    PWMGenEnable(PWM0_BASE, PWM_GEN_0);
 
     // F0 actividad uart
     // F4 Accion UART
     // N0 UltraS
     // N1 Motores
+
+    GPIOPinWrite(GPIO_PORTH_BASE, 0x0f, 0x00);
 
     while(1)
     {
@@ -110,23 +158,43 @@ int main(void)
             }
         }
         if (mtr1Stt == true) {
-        //Pwm
             GPIOPinWrite(GPIO_PORTN_BASE, 0x02, 0x02);
-            GPIOPinWrite(GPIO_PORTN_BASE, 0x04, 0x04);
-            interactiveDelay(0.2, &tIter);
-            if (tIter == 0) {
-                mtr1Stt = false;
-                GPIOPinWrite(GPIO_PORTN_BASE, 0x04, 0);
-            }
+        }
+        else if (mtr1Stt == false) {
+            GPIOPinWrite(GPIO_PORTH_BASE, 0x01, 0x00);
+            GPIOPinWrite(GPIO_PORTH_BASE, 0x02, 0x00);
+            GPIOPinWrite(GPIO_PORTN_BASE, 0x02, 0x00);
         }
         if (mtr2Stt == true) {
-        //Pwm
             GPIOPinWrite(GPIO_PORTN_BASE, 0x02, 0x02);
-            GPIOPinWrite(GPIO_PORTN_BASE, 0x04, 0x04);
-            interactiveDelay(0.2, &tIter);
-            if (tIter == 0) {
-                mtr2Stt = false;
-                GPIOPinWrite(GPIO_PORTN_BASE, 0x04, 0);
+        }
+        else if (mtr2Stt == false) {
+            GPIOPinWrite(GPIO_PORTH_BASE, 0x08, 0x00);
+            GPIOPinWrite(GPIO_PORTH_BASE, 0x04, 0x00);
+            GPIOPinWrite(GPIO_PORTN_BASE, 0x02, 0x00);
+        }
+        if(distance < 10){ // menos de 10 cm
+            if (mtr1Stt == true) {
+            PWMPulseWidthSet(PWM0_BASE, PWM_OUT_1,4000);
+            GPIOPinWrite(GPIO_PORTH_BASE, 0x01, 0x01);
+            GPIOPinWrite(GPIO_PORTH_BASE, 0x02, 0x00);
+            }
+            if (mtr2Stt == true) {
+            PWMPulseWidthSet(PWM0_BASE, PWM_OUT_2,4000);
+            GPIOPinWrite(GPIO_PORTH_BASE, 0x08, 0x08);
+            GPIOPinWrite(GPIO_PORTH_BASE, 0x04, 0x00);
+            }
+        }
+        else{
+            if (mtr1Stt == true) {
+            PWMPulseWidthSet(PWM0_BASE, PWM_OUT_1, 4000);
+            GPIOPinWrite(GPIO_PORTH_BASE, 0x01, 0x00);
+            GPIOPinWrite(GPIO_PORTH_BASE, 0x02, 0x02);
+            }
+            if (mtr2Stt == true) {  
+            PWMPulseWidthSet(PWM0_BASE, PWM_OUT_2,4000);
+            GPIOPinWrite(GPIO_PORTH_BASE, 0x08, 0x00);
+            GPIOPinWrite(GPIO_PORTH_BASE, 0x04, 0x04);
             }
         }
     }
