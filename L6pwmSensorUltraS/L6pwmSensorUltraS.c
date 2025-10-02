@@ -17,6 +17,7 @@ volatile uint32_t ui32Loop;
 void LecSnsUlt(uint32_t *distance);
 void checkUART(char rxBuffer[10], int *rxIndex);
 void interactiveDelay(float time_sec, int *tIter);
+void toogleUart(bool *ledUart);
 
 int main(void)
 {
@@ -81,13 +82,7 @@ int main(void)
             BuzzerState = true;
             memset(rxBuffer, 0, sizeof(rxBuffer));
             GPIOPinWrite(GPIO_PORTN_BASE, 0x04, 0x04);
-            if (ledUart == true) {
-                ledUart = false;
-                GPIOPinWrite(GPIO_PORTF_BASE, 0x10, 0);
-            } else {
-                ledUart = true;
-                GPIOPinWrite(GPIO_PORTF_BASE, 0x10, 0x10);
-            }
+            toogleUart(&ledUart);
         }
         if (strncmp(rxBuffer, "motor1", 6) == 0) {
             if (mtr1Stt == true) {
@@ -96,13 +91,7 @@ int main(void)
                 mtr1Stt = true;
             }
             memset(rxBuffer, 0, sizeof(rxBuffer));
-            if (ledUart == true) {
-                ledUart = false;
-                GPIOPinWrite(GPIO_PORTF_BASE, 0x10, 0);
-            } else {
-                ledUart = true;
-                GPIOPinWrite(GPIO_PORTF_BASE, 0x10, 0x10);
-            }
+            toogleUart(&ledUart);
         }
         if (strncmp(rxBuffer, "motor2", 6) == 0) {
             if (mtr2Stt == true) {
@@ -111,13 +100,7 @@ int main(void)
                 mtr2Stt = true;
             }
             memset(rxBuffer, 0, sizeof(rxBuffer));
-            if (ledUart == true) {
-                ledUart = false;
-                GPIOPinWrite(GPIO_PORTF_BASE, 0x10, 0);
-            } else {
-                ledUart = true;
-                GPIOPinWrite(GPIO_PORTF_BASE, 0x10, 0x10);
-            }
+            toogleUart(&ledUart);
         }
         if (BuzzerState == true) {
             interactiveDelay(2.0, &tIter);
@@ -220,5 +203,15 @@ void LecSnsUlt(uint32_t *distance);
         GPIOPinWrite(GPIO_PORTN_BASE, 0x01, 0);
     } else {
         GPIOPinWrite(GPIO_PORTN_BASE, 0x01, 0x01);
+    }
+}
+//------------------------------------------------------------------
+void toogleUart(bool *ledUart){
+    if (*ledUart == true) {
+        *ledUart = false;
+        GPIOPinWrite(GPIO_PORTF_BASE, 0x10, 0);
+    } else {
+        *ledUart = true;
+        GPIOPinWrite(GPIO_PORTF_BASE, 0x10, 0x10);
     }
 }
