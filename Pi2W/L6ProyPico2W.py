@@ -12,6 +12,7 @@ import time
 
 # Configuraciones de pines:
 #-------------------------{ Leds
+led0 = machine.Pin("LED", machine.Pin.OUT) # Configura el Led integrado como salida
 led1 = Pin(10,Pin.OUT) # Actividad Uart
 led2 = Pin(11,Pin.OUT)
 led3 = Pin(12,Pin.OUT)
@@ -30,33 +31,58 @@ tIter = 0
 
 def main():
     BuzzerState = False
+    mtr1Stt = False
+    mtr2Stt = False
     try:
         while True:
-            led1.value(0)
+            led0.value(0)
             if poll.poll(0):
-                led1.value(1)
+                led0.value(1)
                 linea = sys.stdin.readline().strip()
                 if linea == "buzzer":
+                    led1.toggle()
                     Buzzer.value(1)
                     BuzzerState = True
+                if linea == "motor1":
+                    led1.toggle()
+                    if mtr1Stt:
+                        mtr1Stt = False
+                        led2.value(0)
+                    else:
+                        mtr1Stt = True
+                        led2.value(1)
+                if linea == "motor2":
+                    led1.toggle()
+                    if mtr2Stt:
+                        mtr2Stt = False
+                        led3.value(0)
+                    else:
+                        mtr2Stt = True
+                        led3.value(1)
             #-----------------------
             if BuzzerState:
                 interactiveDelay(2.0)
                 if tIter==0:
                     BuzzerState = False
                     Buzzer.value(0)
+            # if mtr1Stt:
+            #     
+            # else:
+            #     
+            # if mtr2Stt:
+            #     
+            # else: 
+            #     
+            #-----------------------
             time.sleep(0.1)
 
     except Exception as e:
-        led1.value(0)
-        led1.value(0)
-        #--------------
-        led1.toggle()
-        led2.toggle()
+        led0.toggle()
         time.sleep(0.2)
-        led1.toggle()
-        led2.toggle()
+        led0.toggle()
         time.sleep(0.2)
+
+#======================================================
 
 def interactiveDelay(time_sec):
     global tIter
