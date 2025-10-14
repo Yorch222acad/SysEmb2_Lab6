@@ -10,6 +10,8 @@ import utime
 
 #======================================================
 
+# Variables globales:
+tIter = 0
 frecuencia = 1000
 
 # Configuraciones de pines:
@@ -27,37 +29,32 @@ Pwm2 = PWM(Pin(15))
 # ------------------
 Pwm1.freq(frecuencia)
 Pwm2.freq(frecuencia)
-#}--
-
-# Pines del ultrasonico
+#}------------------------{ Ultrasonico
 trig = Pin(18, Pin.OUT)
 echo = Pin(19, Pin.IN)
-
-
-# Inicializar PWMs apagados
-Pwm1.duty_u16(0)
-Pwm2.duty_u16(0)
+#}--
 
 # Configuración Uart no bloqueante
 poll = select.poll()
 poll.register(sys.stdin, select.POLLIN)
 
-tIter = 0
-
 #======================================================
 
 def main():
-    
-    BuzzerState = False
-    mtr1Stt = False
-    mtr2Stt = False
-    DutyValue = 20
-    duty = int((DutyValue/100) * 65535)
-
-    # Tiempo máximo de espera en microsegundos
-    timeout = 30000  # 30 ms
+    VariablesLocales = {
+        #----------------------{ Buzzer
+        "BuzzerState": False,
+        #}---------------------{ Motores
+        "mtr1Stt": False,
+        "mtr2Stt": False,
+        "DutyValue": 20,
+        #}---------------------{ Ultrasonico
+        "timeout": 30000,
+        #}--
+    }    
 
     try:
+
         while True:
 
             #======================================================
@@ -99,8 +96,9 @@ def main():
             utime.sleep_ms(200)
 
             #======================================================
-
+            duty = int((["DutyValue"]/100) * 65535)
             led0.value(0)
+            #UART
             if poll.poll(0):
                 led0.value(1)
                 linea = sys.stdin.readline().strip()
@@ -126,8 +124,7 @@ def main():
                         led3.value(1)
             #-----------------------
             if BuzzerState:
-                interactiveDelay(2.0)
-                if tIter==0:
+                if interactiveDelay(2.0):
                     BuzzerState = False
                     Buzzer.value(0)
             #-----------------------
@@ -150,11 +147,35 @@ def main():
 
 def interactiveDelay(time_sec):
     global tIter
-    TotalTimeIter = int(time_sec*100)
-    if tIter==0:
-        tIter=TotalTimeIter
-    utime.sleep_ms(10)
-    tIter-=1
+    if tIter == 0:
+        # Guardar el instante de inicio en milisegundos
+        tIter = utime.ticks_add(utime.ticks_ms(), int(time_sec * 1000))
+    # Verificar si ya pasó el tiempo deseado
+    if utime.ticks_diff(tIter, utime.ticks_ms()) <= 0:
+        tIter = 0
+        return True  # señal de que el tiempo terminó
+    return False
+
+#-----------------------------------------------------------------------
+
+def uartHandler(state):
+    # Ejemplo: procesar UART y modificar el estado
+    if poll.poll(0):
+        linea = sys.stdin.readline().strip()
+        if linea == "buzzer":
+            led1.toggle()
+            Buzzer.value(1)
+            state["BuzzerState"] = True
+        if linea == "motor1":
+            led1.toggle()
+            state["mtr1Stt"] = not state["mtr1Stt"]
+            led2.value(state["mtr1Stt"])
+        if linea == "motor2":
+            led1.toggle()
+            state["mtr2Stt"] = not state["mtr2Stt"]
+            led3.value(state["mtr2Stt"])
+
+
 
 if __name__ == "__main__":
     main()
