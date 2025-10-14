@@ -41,6 +41,10 @@ poll.register(sys.stdin, select.POLLIN)
 #======================================================
 
 def main():
+    distance = LectrUltrasonico()
+
+    if distance == -1:
+        print("Error: no se pudo medir distancia")
 
     # Variables locales:
     #----------------------{ Buzzer
@@ -55,45 +59,7 @@ def main():
     try:
 
         while True:
-
-            #======================================================
-
-            # Medición de distancia con ultrasonico con timeout
-            trig.on()
-            utime.sleep_ms(10)
-            trig.off()
-
-            timeout = 30000  # microsegundos (30 ms)
-            inicio = None
-            final = None
-
-            # Espera que echo suba a 1
-            start_tick = utime.ticks_us()
-            while echo.value() == 0:
-                if utime.ticks_diff(utime.ticks_us(), start_tick) > timeout:
-                    print("Timeout esperando inicio del eco")
-                    break
-                inicio = utime.ticks_us()
-
-            # Solo continuar si se detectó el inicio
-            if inicio is not None:
-                start_tick = utime.ticks_us()
-                while echo.value() == 1:
-                    if utime.ticks_diff(utime.ticks_us(), start_tick) > timeout:
-                        break
-                    final = utime.ticks_us()
-
-            # Calcular distancia solo si se midió correctamente
-            if inicio is not None and final is not None:
-                tiempo = final - inicio
-                distance = (tiempo * 0.0343) / 2  # velocidad del sonido en cm/us
-                
-            else:
-                print("No se pudo medir la distancia")
-
-            utime.sleep_ms(200)
-
-            #======================================================
+            distance = LectrUltrasonico()
             led0.value(0)
             #UART
             BuzzerState, mtr1Stt, mtr2Stt = UartHandler(BuzzerState, mtr1Stt, mtr2Stt)
@@ -166,3 +132,39 @@ def UartHandler(BuzzerState, mtr1Stt, mtr2Stt):
 
 if __name__ == "__main__":
     main()
+
+#======================================================
+def LectrUltrasonico():
+    # Medición de distancia con ultrasonico con timeout
+    trig.off()
+    utime.sleep_us(2)
+    trig.on()
+    utime.sleep_us(10)
+    trig.off()
+
+    timeout = 30000  # microsegundos (30 ms)
+    inicio = None
+    final = None
+
+    # Espera que echo suba a 1 (inicio del eco)
+    start_tick = utime.ticks_us()
+    while echo.value() == 0:
+        if utime.ticks_diff(utime.ticks_us(), start_tick) > timeout:
+            return -1  # No se detectó eco
+        inicio = utime.ticks_us()
+
+    # Espera que echo baje a 0 (fin del eco)
+    start_tick = utime.ticks_us()
+    while echo.value() == 1:
+        if utime.ticks_diff(utime.ticks_us(), start_tick) > timeout:
+            return -1  # El pulso duró demasiado
+        final = utime.ticks_us()
+
+    if inicio is None or final is None:
+        return -1  # Error de sincronización
+
+    tiempo = final - inicio
+    distancia = (tiempo * 0.0343) / 2  # en cm
+    utime.sleep_ms(200)
+
+    return distancia
