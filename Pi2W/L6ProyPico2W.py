@@ -5,7 +5,7 @@ from machine import Pin, PWM
 import sys # Uart vía USB
 import select # UART no bloqueante
 #}----------------------------{ Otros
-import time
+import utime
 #}--
 
 #======================================================
@@ -29,6 +29,11 @@ Pwm1.freq(frecuencia)
 Pwm2.freq(frecuencia)
 #}--
 
+# Pines del ultrasonico
+trig = Pin(18, Pin.OUT)
+echo = Pin(19, Pin.IN)
+
+
 # Inicializar PWMs apagados
 Pwm1.duty_u16(0)
 Pwm2.duty_u16(0)
@@ -42,13 +47,58 @@ tIter = 0
 #======================================================
 
 def main():
+    
     BuzzerState = False
     mtr1Stt = False
     mtr2Stt = False
     DutyValue = 20
     duty = int((DutyValue/100) * 65535)
+
+    # Tiempo máximo de espera en microsegundos
+    timeout = 30000  # 30 ms
+
     try:
         while True:
+
+            #======================================================
+
+            # Medición de distancia con ultrasonico con timeout
+            trig.on()
+            utime.sleep_ms(10)
+            trig.off()
+
+            timeout = 30000  # microsegundos (30 ms)
+            inicio = None
+            final = None
+
+            # Espera que echo suba a 1
+            start_tick = utime.ticks_us()
+            while echo.value() == 0:
+                if utime.ticks_diff(utime.ticks_us(), start_tick) > timeout:
+                    print("Timeout esperando inicio del eco")
+                    break
+                inicio = utime.ticks_us()
+
+            # Solo continuar si se detectó el inicio
+            if inicio is not None:
+                start_tick = utime.ticks_us()
+                while echo.value() == 1:
+                    if utime.ticks_diff(utime.ticks_us(), start_tick) > timeout:
+                        break
+                    final = utime.ticks_us()
+
+            # Calcular distancia solo si se midió correctamente
+            if inicio is not None and final is not None:
+                tiempo = final - inicio
+                distance = (tiempo * 0.0343) / 2  # velocidad del sonido en cm/us
+                
+            else:
+                print("No se pudo medir la distancia")
+
+            utime.sleep_ms(200)
+
+            #======================================================
+
             led0.value(0)
             if poll.poll(0):
                 led0.value(1)
@@ -89,22 +139,25 @@ def main():
             else: 
                 Pwm2.duty_u16(0)
             #-----------------------
-            time.sleep(0.1)
+            if distance < 10:
+                led4.value(1)
+            else:
+                led4.value(0)
 
     except Exception as e:
         led0.toggle()
-        time.sleep(0.2)
+        utime.sleep_ms(200)
         led0.toggle()
-        time.sleep(0.2)
+        utime.sleep_ms(200)
 
 #======================================================
 
 def interactiveDelay(time_sec):
     global tIter
-    TotalTimeIter = int(time_sec*10)
+    TotalTimeIter = int(time_sec*100)
     if tIter==0:
         tIter=TotalTimeIter
-    time.sleep(0.1)
+    utime.sleep_ms(10)
     tIter-=1
 
 if __name__ == "__main__":
