@@ -48,8 +48,7 @@ def main():
     #}---------------------{ Motores
     mtr1Stt = False
     mtr2Stt = False
-    DutyValue = 20
-    duty = int((DutyValue/100) * 65535)
+    duty = 0
     #}---------------------{ Ultrasonico
 
     try:
@@ -62,7 +61,7 @@ def main():
                 led4.toggle()
                 utime.sleep_ms(100)
             #-----------------------
-            BuzzerState, mtr1Stt, mtr2Stt = UartHandler(BuzzerState, mtr1Stt, mtr2Stt)
+            BuzzerState, mtr1Stt, mtr2Stt, duty = UartHandler(BuzzerState, mtr1Stt, mtr2Stt, duty)
             #-----------------------
             if BuzzerState:
                 if interactiveDelay(2.0):
@@ -104,31 +103,49 @@ def interactiveDelay(time_sec):
 
 #-----------------------------------------------------------------------
 
-def UartHandler(BuzzerState, mtr1Stt, mtr2Stt):
+def UartHandler(BuzzerState, mtr1Stt, mtr2Stt, duty):
     if poll.poll(0):
         led0.value(1)
         linea = sys.stdin.readline().strip()
+
+        # ---- Buzzer ----
         if linea == "buzzer":
             led1.toggle()
             Buzzer.value(1)
             BuzzerState = True
-        if linea == "motor1":
+
+        # ---- Motor 1 ----
+        elif linea == "motor1":
             led1.toggle()
-            if mtr1Stt:
-                mtr1Stt = False
-                led2.value(0)
-            else:
-                mtr1Stt = True
-                led2.value(1)
-        if linea == "motor2":
+            mtr1Stt = not mtr1Stt
+            led2.value(mtr1Stt)
+
+        # ---- Motor 2 ----
+        elif linea == "motor2":
             led1.toggle()
-            if mtr2Stt:
-                mtr2Stt = False
-                led3.value(0)
-            else:
-                mtr2Stt = True
-                led3.value(1)
-    return BuzzerState, mtr1Stt, mtr2Stt
+            mtr2Stt = not mtr2Stt
+            led3.value(mtr2Stt)
+
+        # ---- DutyCycle ----
+        elif linea.startswith("DutyCycle"):
+            try:
+                # Extraer el valor numérico después de "DutyCycle"
+                parts = linea.split()
+                if len(parts) == 2:
+                    DutyValue = int(parts[1])
+                    if 0 <= DutyValue <= 100:
+                        duty = int((DutyValue / 100) * 65535)
+                        print("Nuevo DutyCycle:", DutyValue, "%")
+                    else:
+                        print("Valor fuera de rango (0-100)")
+                else:
+                    print("Formato inválido del mensaje:", linea)
+            except ValueError:
+                print("Error al convertir DutyCycle:", linea)
+
+    return BuzzerState, mtr1Stt, mtr2Stt, duty
+
+#-----------------------------------------------------------------------
 
 def LectrUltrasonico():
     # Medición de distancia con ultrasonico con timeout
