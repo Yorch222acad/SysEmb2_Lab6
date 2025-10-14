@@ -1,6 +1,6 @@
 # Importaciones:
 #-----------------------------{ Mínimas
-from machine import Pin
+from machine import Pin, PWM
 #}----------------------------{ Uart
 import sys # Uart vía USB
 import select # UART no bloqueante
@@ -9,6 +9,8 @@ import time
 #}--
 
 #======================================================
+
+frecuencia = 1000
 
 # Configuraciones de pines:
 #-------------------------{ Leds
@@ -19,7 +21,17 @@ led3 = Pin(12,Pin.OUT)
 led4 = Pin(13,Pin.OUT)
 #}------------------------{ Buzzer
 Buzzer = Pin(16,Pin.OUT)
+#}------------------------{ PWM
+Pwm1 = PWM(Pin(14))
+Pwm2 = PWM(Pin(15))
+# ------------------
+Pwm1.freq(frecuencia)
+Pwm2.freq(frecuencia)
 #}--
+
+# Inicializar PWMs apagados
+Pwm1.duty_u16(0)
+Pwm2.duty_u16(0)
 
 # Configuración Uart no bloqueante
 poll = select.poll()
@@ -33,6 +45,8 @@ def main():
     BuzzerState = False
     mtr1Stt = False
     mtr2Stt = False
+    DutyValue = 20
+    duty = int((DutyValue/100) * 65535)
     try:
         while True:
             led0.value(0)
@@ -65,14 +79,15 @@ def main():
                 if tIter==0:
                     BuzzerState = False
                     Buzzer.value(0)
-            # if mtr1Stt:
-            #     
-            # else:
-            #     
-            # if mtr2Stt:
-            #     
-            # else: 
-            #     
+            #-----------------------
+            if mtr1Stt:
+                Pwm1.duty_u16(duty)
+            else:
+                Pwm1.duty_u16(0)
+            if mtr2Stt:
+                Pwm2.duty_u16(duty)
+            else: 
+                Pwm2.duty_u16(0)
             #-----------------------
             time.sleep(0.1)
 
