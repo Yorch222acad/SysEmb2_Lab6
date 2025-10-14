@@ -84,7 +84,6 @@ def main():
                 start_tick = utime.ticks_us()
                 while echo.value() == 1:
                     if utime.ticks_diff(utime.ticks_us(), start_tick) > timeout:
-                        print("Timeout esperando fin del eco")
                         break
                     final = utime.ticks_us()
 
@@ -92,7 +91,7 @@ def main():
             if inicio is not None and final is not None:
                 tiempo = final - inicio
                 distance = (tiempo * 0.0343) / 2  # velocidad del sonido en cm/us
-                print("La distancia es " + str(int(distance)) + " cm")
+                
             else:
                 print("No se pudo medir la distancia")
 
@@ -139,6 +138,11 @@ def main():
                 Pwm2.duty_u16(duty)
             else: 
                 Pwm2.duty_u16(0)
+            #-----------------------
+            if distance < 10:
+                led4.value(1)
+            else:
+                led4.value(0)
 
     except Exception as e:
         led0.toggle()
