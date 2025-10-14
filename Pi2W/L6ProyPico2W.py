@@ -41,17 +41,16 @@ poll.register(sys.stdin, select.POLLIN)
 #======================================================
 
 def main():
-    VariablesLocales = {
-        #----------------------{ Buzzer
-        "BuzzerState": False,
-        #}---------------------{ Motores
-        "mtr1Stt": False,
-        "mtr2Stt": False,
-        "DutyValue": 20,
-        #}---------------------{ Ultrasonico
-        "timeout": 30000,
-        #}--
-    }    
+
+    # Variables locales:
+    #----------------------{ Buzzer
+    BuzzerState = False
+    #}---------------------{ Motores
+    mtr1Stt = False
+    mtr2Stt = False
+    DutyValue = 20
+    duty = int((DutyValue/100) * 65535)
+    #}---------------------{ Ultrasonico
 
     try:
 
@@ -96,32 +95,9 @@ def main():
             utime.sleep_ms(200)
 
             #======================================================
-            duty = int((["DutyValue"]/100) * 65535)
             led0.value(0)
             #UART
-            if poll.poll(0):
-                led0.value(1)
-                linea = sys.stdin.readline().strip()
-                if linea == "buzzer":
-                    led1.toggle()
-                    Buzzer.value(1)
-                    BuzzerState = True
-                if linea == "motor1":
-                    led1.toggle()
-                    if mtr1Stt:
-                        mtr1Stt = False
-                        led2.value(0)
-                    else:
-                        mtr1Stt = True
-                        led2.value(1)
-                if linea == "motor2":
-                    led1.toggle()
-                    if mtr2Stt:
-                        mtr2Stt = False
-                        led3.value(0)
-                    else:
-                        mtr2Stt = True
-                        led3.value(1)
+            BuzzerState, mtr1Stt, mtr2Stt = UartHandler(BuzzerState, mtr1Stt, mtr2Stt)
             #-----------------------
             if BuzzerState:
                 if interactiveDelay(2.0):
@@ -158,24 +134,31 @@ def interactiveDelay(time_sec):
 
 #-----------------------------------------------------------------------
 
-def uartHandler(state):
-    # Ejemplo: procesar UART y modificar el estado
+def UartHandler(BuzzerState, mtr1Stt, mtr2Stt):
     if poll.poll(0):
+        led0.value(1)
         linea = sys.stdin.readline().strip()
         if linea == "buzzer":
             led1.toggle()
             Buzzer.value(1)
-            state["BuzzerState"] = True
+            BuzzerState = True
         if linea == "motor1":
             led1.toggle()
-            state["mtr1Stt"] = not state["mtr1Stt"]
-            led2.value(state["mtr1Stt"])
+            if mtr1Stt:
+                mtr1Stt = False
+                led2.value(0)
+            else:
+                mtr1Stt = True
+                led2.value(1)
         if linea == "motor2":
             led1.toggle()
-            state["mtr2Stt"] = not state["mtr2Stt"]
-            led3.value(state["mtr2Stt"])
-
-
+            if mtr2Stt:
+                mtr2Stt = False
+                led3.value(0)
+            else:
+                mtr2Stt = True
+                led3.value(1)
+    return BuzzerState, mtr1Stt, mtr2Stt
 
 if __name__ == "__main__":
     main()
