@@ -1,0 +1,12 @@
+[33mac0547f[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mMain[m[33m, [m[1;31morigin/Main[m[33m)[m Agregado Ultrasonico
+[33m3d015b6[m Agregado Pwm con Leds
+[33m00309d5[m Crear segmento para motores
+[33mefc6b76[m Agregado InteractiveDelay
+[33md9cda01[m Dividido Tiva y Pico2W, Uart y buzzer básico
+[33m5d56f6c[m[33m ([m[1;31morigin/Jorge[m[33m, [m[1;32mJorge[m[33m)[m Agragado comentarios
+[33m60cb004[m Con PWM funcional, dos motores
+[33m60ff8a0[m Con Funcion TogleeUART
+[33maafe4bd[m Ultima version funcional del fracaso
+[33mb7d74c8[m Cambios y a probar SSH
+[33mf94f49f[m Cambios y a probar SSH
+[33m8c2087a[m ejr1TivaF2Proyecto
