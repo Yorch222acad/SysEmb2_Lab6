@@ -25,7 +25,11 @@ led4 = Pin(13,Pin.OUT)
 Buzzer = Pin(16,Pin.OUT)
 #}------------------------{ PWM
 Pwm1 = PWM(Pin(14))
+dir2 = Pin(2,Pin.OUT)
+dir1 = Pin(3,Pin.OUT)
 Pwm2 = PWM(Pin(15))
+dir3 = Pin(4,Pin.OUT)
+dir4 = Pin(5,Pin.OUT)
 # ------------------
 Pwm1.freq(frecuencia)
 Pwm2.freq(frecuencia)
@@ -56,6 +60,7 @@ def main():
 
         while True:
             led0.value(0)
+            
             #-----------------------
             distance = LectrUltrasonico()
             if distance == -1:
@@ -70,19 +75,44 @@ def main():
                     Buzzer.value(0)
             #-----------------------
             if mtr1Stt:
-                Pwm1.duty_u16(duty)
+                Pwm1.duty_u16(32000)
+                dir1.value(1)
+                dir2.value(0)
             else:
                 Pwm1.duty_u16(0)
+                dir1.value(0)
+                dir2.value(0)
+
             if mtr2Stt:
-                Pwm2.duty_u16(duty)
+                Pwm2.duty_u16(32000)
+                dir3.value(1)
+                dir4.value(0)
             else: 
                 Pwm2.duty_u16(0)
+                dir3.value(0)
+                dir4.value(0)
             #-----------------------
             if distance >=0 and distance < 10:
                 led4.value(1)
+                if mtr1Stt:
+                    Pwm1.duty_u16(0)
+                    dir1.value(0)
+                    dir2.value(0)
+                if mtr2Stt:
+                    Pwm2.duty_u16(0)
+                    dir3.value(0)
+                    dir4.value(0)
             else:
                 led4.value(0)
-
+                if mtr1Stt:
+                    Pwm1.duty_u16(32000)
+                    dir1.value(1)
+                    dir2.value(0)
+                if mtr2Stt:
+                    Pwm2.duty_u16(32000)
+                    dir3.value(1)
+                    dir4.value(0)
+                
     except Exception as e:
         led0.toggle()
         utime.sleep_ms(200)
@@ -166,4 +196,4 @@ def LectrUltrasonico():
     return distancia
 
 if __name__ == "__main__":
-    main()
+    main() 
