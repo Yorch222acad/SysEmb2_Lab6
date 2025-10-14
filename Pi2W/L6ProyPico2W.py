@@ -41,10 +41,6 @@ poll.register(sys.stdin, select.POLLIN)
 #======================================================
 
 def main():
-    distance = LectrUltrasonico()
-
-    if distance == -1:
-        print("Error: no se pudo medir distancia")
 
     # Variables locales:
     #----------------------{ Buzzer
@@ -59,9 +55,13 @@ def main():
     try:
 
         while True:
-            distance = LectrUltrasonico()
             led0.value(0)
-            #UART
+            #-----------------------
+            distance = LectrUltrasonico()
+            if distance == -1:
+                led4.toggle()
+                utime.sleep_ms(100)
+            #-----------------------
             BuzzerState, mtr1Stt, mtr2Stt = UartHandler(BuzzerState, mtr1Stt, mtr2Stt)
             #-----------------------
             if BuzzerState:
@@ -78,7 +78,7 @@ def main():
             else: 
                 Pwm2.duty_u16(0)
             #-----------------------
-            if distance < 10:
+            if distance >=0 and distance < 10:
                 led4.value(1)
             else:
                 led4.value(0)
@@ -130,10 +130,6 @@ def UartHandler(BuzzerState, mtr1Stt, mtr2Stt):
                 led3.value(1)
     return BuzzerState, mtr1Stt, mtr2Stt
 
-if __name__ == "__main__":
-    main()
-
-#======================================================
 def LectrUltrasonico():
     # Medición de distancia con ultrasonico con timeout
     trig.off()
@@ -168,3 +164,6 @@ def LectrUltrasonico():
     utime.sleep_ms(200)
 
     return distancia
+
+if __name__ == "__main__":
+    main()
